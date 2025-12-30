@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: pullup-challenge-bot
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: BOT_TOKEN
+        sync: false
+      - key: TIMEZONE
+        value: Europe/Minsk
+      - key: CHALLENGE_START_DATE
+        value: 2024-01-01
+      - key: DATABASE_PATH
+        value: ./data/challenge.db
+
