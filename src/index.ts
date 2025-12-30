@@ -201,8 +201,8 @@ bot.hears('👤 Мой прогресс', async (ctx: Context) => {
 ${tempoText}
 📉 Нужно в день до конца года: ${neededPerDay}`;
 
-    await ctx.reply(message, getKeyboard());
-    console.log('✅ Sent progress message');
+    const sentMessage = await ctx.reply(message, getKeyboard());
+    console.log('✅ Sent progress message, message_id:', sentMessage.message_id);
   } catch (error) {
     console.error('❌ Error in Мой прогресс:', error);
     await ctx.reply('Произошла ошибка при получении данных. Попробуйте позже.').catch(console.error);
@@ -248,8 +248,8 @@ async function showLeaderboard(ctx: Context) {
       message += `${index + 1}) ${name} — ${entry.total.toLocaleString()}\n`;
     });
 
-    await ctx.reply(message, getKeyboard());
-    console.log('✅ Sent leaderboard');
+    const sentMessage = await ctx.reply(message, getKeyboard());
+    console.log('✅ Sent leaderboard, message_id:', sentMessage.message_id);
   } catch (error) {
     console.error('❌ Error in showLeaderboard:', error);
     throw error;
@@ -438,8 +438,14 @@ bot.use(async (ctx, next) => {
   }
   try {
     await next();
+    console.log(`✅ Middleware: successfully processed update ${ctx.update.update_id}`);
   } catch (err) {
     console.error('❌ Middleware error:', err);
+    console.error('Error details:', {
+      updateId: ctx.update.update_id,
+      updateType: ctx.updateType,
+      error: err instanceof Error ? err.message : String(err)
+    });
     throw err;
   }
 });
