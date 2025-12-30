@@ -24,3 +24,4 @@ RUN mkdir -p /app/data
 # Запуск приложения
 CMD ["npm", "start"]
 
+

@@ -167,10 +167,12 @@ ${tempoText}
 bot.hears('👤 Мой прогресс', async (ctx: Context) => {
   if (!ctx.from) return;
   
+  console.log('👤 Button clicked: Мой прогресс');
   clearWaitingState(ctx.from.id);
   
-  // Используем логику из /me
-  const user = await db.getOrCreateUser(
+  try {
+    // Используем логику из /me
+    const user = await db.getOrCreateUser(
     ctx.from.id,
     ctx.from.username,
     ctx.from.first_name
@@ -212,27 +214,41 @@ bot.command('top', async (ctx: Context) => {
 
 // Кнопка "🏆 Лидерборд"
 bot.hears('🏆 Лидерборд', async (ctx: Context) => {
+  console.log('🏆 Button clicked: Лидерборд');
   if (ctx.from) {
     clearWaitingState(ctx.from.id);
   }
-  await showLeaderboard(ctx);
+  try {
+    await showLeaderboard(ctx);
+  } catch (error) {
+    console.error('❌ Error in Лидерборд:', error);
+    await ctx.reply('Произошла ошибка при получении лидерборда. Попробуйте позже.').catch(console.error);
+  }
 });
 
 async function showLeaderboard(ctx: Context) {
-  const leaders = await db.getTopLeaders(20);
+  try {
+    console.log('📊 Fetching leaderboard...');
+    const leaders = await db.getTopLeaders(20);
+    console.log(`📊 Found ${leaders.length} leaders`);
 
-  if (leaders.length === 0) {
-    await ctx.reply('Пока нет участников в лидерборде.', getKeyboard());
-    return;
+    if (leaders.length === 0) {
+      await ctx.reply('Пока нет участников в лидерборде.', getKeyboard());
+      return;
+    }
+
+    let message = '🏆 Топ-20 лидеров:\n\n';
+    leaders.forEach((entry, index) => {
+      const name = formatUsername(entry.user);
+      message += `${index + 1}) ${name} — ${entry.total.toLocaleString()}\n`;
+    });
+
+    await ctx.reply(message, getKeyboard());
+    console.log('✅ Sent leaderboard');
+  } catch (error) {
+    console.error('❌ Error in showLeaderboard:', error);
+    throw error;
   }
-
-  let message = '🏆 Топ-20 лидеров:\n\n';
-  leaders.forEach((entry, index) => {
-    const name = formatUsername(entry.user);
-    message += `${index + 1}) ${name} — ${entry.total.toLocaleString()}\n`;
-  });
-
-  await ctx.reply(message, getKeyboard());
 }
 
 // /today
@@ -396,8 +412,31 @@ bot.on('text', async (ctx: Context) => {
 
 // Обработка ошибок
 bot.catch((err, ctx) => {
-  console.error('Error:', err);
-  ctx.reply('Произошла ошибка. Попробуйте позже.').catch(console.error);
+  console.error('❌ Bot error:', err);
+  console.error('Error context:', {
+    updateType: ctx.updateType,
+    message: ctx.message ? (ctx.message as any).text : 'no message',
+    from: ctx.from ? ctx.from.id : 'no from'
+  });
+  
+  try {
+    ctx.reply('Произошла ошибка. Попробуйте позже.').catch(console.error);
+  } catch (e) {
+    console.error('Failed to send error message:', e);
+  }
+});
+
+// Логирование всех входящих сообщений для отладки
+bot.use(async (ctx, next) => {
+  if (ctx.message && 'text' in ctx.message) {
+    console.log(`📨 Received: "${ctx.message.text}" from user ${ctx.from?.id}`);
+  }
+  try {
+    await next();
+  } catch (err) {
+    console.error('❌ Middleware error:', err);
+    throw err;
+  }
 });
 
 // Запуск простого HTTP сервера для Render (health check)
