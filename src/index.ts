@@ -400,6 +400,22 @@ bot.catch((err, ctx) => {
   ctx.reply('Произошла ошибка. Попробуйте позже.').catch(console.error);
 });
 
+// Запуск простого HTTP сервера для Render (health check)
+const PORT = process.env.PORT || 3000;
+const server = http.createServer((req, res) => {
+  if (req.url === '/health' || req.url === '/') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ status: 'ok', service: 'telegram-bot' }));
+  } else {
+    res.writeHead(404);
+    res.end('Not found');
+  }
+});
+
+server.listen(PORT, () => {
+  console.log(`HTTP server listening on port ${PORT} (for Render health checks)`);
+});
+
 // Graceful shutdown
 process.once('SIGINT', async () => {
   console.log('Shutting down...');
