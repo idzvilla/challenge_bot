@@ -22,7 +22,8 @@ export function getConfig() {
     botToken: process.env.BOT_TOKEN || '',
     timezone: process.env.TIMEZONE || 'Europe/Minsk',
     challengeStartDate: process.env.CHALLENGE_START_DATE || '2024-01-01',
-    databasePath: process.env.DATABASE_PATH || './data/challenge.db'
+    databasePath: process.env.DATABASE_PATH || './data/challenge.db',
+    databaseUrl: process.env.DATABASE_URL || '' // PostgreSQL connection string
   };
 }
 

@@ -1,5 +1,5 @@
 import { Telegraf, Context, Markup } from 'telegraf';
-import { ChallengeDatabase } from './database';
+import { createDatabaseAdapter, DatabaseAdapter } from './database-adapter';
 import { getConfig, getDateInTimezone, getDateTimeInTimezone, formatUsername, calculateDaysUntilEndOfYear } from './utils';
 
 interface BotState {
@@ -14,7 +14,9 @@ if (!config.botToken) {
 }
 
 const bot = new Telegraf(config.botToken);
-const db = new ChallengeDatabase(config.databasePath);
+
+// Инициализация базы данных: PostgreSQL если есть DATABASE_URL, иначе SQLite
+const db: DatabaseAdapter = createDatabaseAdapter(config.databaseUrl, config.databasePath);
 const state: BotState = {
   waitingForReps: new Set<number>()
 };
@@ -42,7 +44,7 @@ bot.command('start', async (ctx: Context) => {
 
   clearWaitingState(ctx.from.id);
 
-  const user = db.getOrCreateUser(
+  const user = await db.getOrCreateUser(
     ctx.from.id,
     ctx.from.username,
     ctx.from.first_name
@@ -86,7 +88,7 @@ async function handleAddReps(ctx: Context, repsStr: string) {
     return;
   }
 
-  const user = db.getOrCreateUser(
+  const user = await db.getOrCreateUser(
     ctx.from.id,
     ctx.from.username,
     ctx.from.first_name
@@ -95,10 +97,10 @@ async function handleAddReps(ctx: Context, repsStr: string) {
   const todayDate = getDateInTimezone(config.timezone);
   const loggedAt = getDateTimeInTimezone(config.timezone);
 
-  db.addLog(user.id, reps, loggedAt, todayDate);
+  await db.addLog(user.id, reps, loggedAt, todayDate);
 
-  const total = db.getTotalReps(user.id);
-  const today = db.getTodayReps(user.id, todayDate);
+  const total = await db.getTotalReps(user.id);
+  const today = await db.getTodayReps(user.id, todayDate);
 
   clearWaitingState(ctx.from.id);
 
@@ -122,14 +124,14 @@ bot.command('me', async (ctx: Context) => {
 
   clearWaitingState(ctx.from.id);
 
-  const user = db.getOrCreateUser(
+  const user = await db.getOrCreateUser(
     ctx.from.id,
     ctx.from.username,
     ctx.from.first_name
   );
 
   const todayDate = getDateInTimezone(config.timezone);
-  const stats = db.getUserStats(user.id, todayDate, config.challengeStartDate);
+  const stats = await db.getUserStats(user.id, todayDate, config.challengeStartDate);
 
   const remaining = Math.max(0, GOAL - stats.total);
   const daysUntilEnd = calculateDaysUntilEndOfYear(config.challengeStartDate, config.timezone);
@@ -161,14 +163,14 @@ bot.hears('👤 Мой прогресс', async (ctx: Context) => {
   clearWaitingState(ctx.from.id);
   
   // Используем логику из /me
-  const user = db.getOrCreateUser(
+  const user = await db.getOrCreateUser(
     ctx.from.id,
     ctx.from.username,
     ctx.from.first_name
   );
 
   const todayDate = getDateInTimezone(config.timezone);
-  const stats = db.getUserStats(user.id, todayDate, config.challengeStartDate);
+  const stats = await db.getUserStats(user.id, todayDate, config.challengeStartDate);
 
   const remaining = Math.max(0, GOAL - stats.total);
   const daysUntilEnd = calculateDaysUntilEndOfYear(config.challengeStartDate, config.timezone);
@@ -210,7 +212,7 @@ bot.hears('🏆 Лидерборд', async (ctx: Context) => {
 });
 
 async function showLeaderboard(ctx: Context) {
-  const leaders = db.getTopLeaders(20);
+  const leaders = await db.getTopLeaders(20);
 
   if (leaders.length === 0) {
     await ctx.reply('Пока нет участников в лидерборде.', getKeyboard());
@@ -232,14 +234,14 @@ bot.command('today', async (ctx: Context) => {
 
   clearWaitingState(ctx.from.id);
 
-  const user = db.getOrCreateUser(
+  const user = await db.getOrCreateUser(
     ctx.from.id,
     ctx.from.username,
     ctx.from.first_name
   );
 
   const todayDate = getDateInTimezone(config.timezone);
-  const today = db.getTodayReps(user.id, todayDate);
+  const today = await db.getTodayReps(user.id, todayDate);
 
   await ctx.reply(`📅 Сегодня вы сделали: ${today} подтягиваний`, getKeyboard());
 });
@@ -250,14 +252,14 @@ bot.hears('📅 Сегодня', async (ctx: Context) => {
 
   clearWaitingState(ctx.from.id);
 
-  const user = db.getOrCreateUser(
+  const user = await db.getOrCreateUser(
     ctx.from.id,
     ctx.from.username,
     ctx.from.first_name
   );
 
   const todayDate = getDateInTimezone(config.timezone);
-  const today = db.getTodayReps(user.id, todayDate);
+  const today = await db.getTodayReps(user.id, todayDate);
 
   await ctx.reply(`📅 Сегодня вы сделали: ${today} подтягиваний`, getKeyboard());
 });
@@ -268,20 +270,20 @@ bot.command('undo', async (ctx: Context) => {
 
   clearWaitingState(ctx.from.id);
 
-  const user = db.getOrCreateUser(
+  const user = await db.getOrCreateUser(
     ctx.from.id,
     ctx.from.username,
     ctx.from.first_name
   );
 
-  const lastLog = db.getLastLog(user.id);
+  const lastLog = await db.getLastLog(user.id);
 
   if (!lastLog) {
     await ctx.reply('❌ Нечего отменять. У вас нет записей.', getKeyboard());
     return;
   }
 
-  const deleted = db.deleteLog(lastLog.id);
+  const deleted = await db.deleteLog(lastLog.id);
 
   if (!deleted) {
     await ctx.reply('❌ Ошибка при удалении записи.', getKeyboard());
@@ -289,8 +291,8 @@ bot.command('undo', async (ctx: Context) => {
   }
 
   const todayDate = getDateInTimezone(config.timezone);
-  const total = db.getTotalReps(user.id);
-  const today = db.getTodayReps(user.id, todayDate);
+  const total = await db.getTotalReps(user.id);
+  const today = await db.getTodayReps(user.id, todayDate);
 
   await ctx.reply(
     `✅ Удалено ${lastLog.reps} подтягиваний.\n📅 Сегодня: ${today}\n📊 Всего: ${total}`,
@@ -304,20 +306,20 @@ bot.hears('↩️ Undo', async (ctx: Context) => {
 
   clearWaitingState(ctx.from.id);
 
-  const user = db.getOrCreateUser(
+  const user = await db.getOrCreateUser(
     ctx.from.id,
     ctx.from.username,
     ctx.from.first_name
   );
 
-  const lastLog = db.getLastLog(user.id);
+  const lastLog = await db.getLastLog(user.id);
 
   if (!lastLog) {
     await ctx.reply('❌ Нечего отменять. У вас нет записей.', getKeyboard());
     return;
   }
 
-  const deleted = db.deleteLog(lastLog.id);
+  const deleted = await db.deleteLog(lastLog.id);
 
   if (!deleted) {
     await ctx.reply('❌ Ошибка при удалении записи.', getKeyboard());
@@ -325,8 +327,8 @@ bot.hears('↩️ Undo', async (ctx: Context) => {
   }
 
   const todayDate = getDateInTimezone(config.timezone);
-  const total = db.getTotalReps(user.id);
-  const today = db.getTodayReps(user.id, todayDate);
+  const total = await db.getTotalReps(user.id);
+  const today = await db.getTodayReps(user.id, todayDate);
 
   await ctx.reply(
     `✅ Удалено ${lastLog.reps} подтягиваний.\n📅 Сегодня: ${today}\n📊 Всего: ${total}`,
@@ -392,14 +394,14 @@ bot.catch((err, ctx) => {
 });
 
 // Graceful shutdown
-process.once('SIGINT', () => {
+process.once('SIGINT', async () => {
   console.log('Shutting down...');
-  db.close();
+  await db.close();
   bot.stop('SIGINT');
 });
-process.once('SIGTERM', () => {
+process.once('SIGTERM', async () => {
   console.log('Shutting down...');
-  db.close();
+  await db.close();
   bot.stop('SIGTERM');
 });
 
