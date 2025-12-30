@@ -415,9 +415,21 @@ console.log('Config:', {
 });
 
 // Функция запуска бота с повторными попытками
-async function startBotWithRetry(retries = 3, delay = 5000) {
+async function startBotWithRetry(retries = 3, delay = 10000) {
   for (let i = 0; i < retries; i++) {
     try {
+      // Останавливаем предыдущие обновления перед запуском
+      try {
+        await bot.telegram.deleteWebhook({ drop_pending_updates: true });
+        console.log('Cleared webhook and pending updates');
+      } catch (webhookErr: any) {
+        // Игнорируем ошибки при очистке webhook
+        console.log('Webhook clear attempt:', webhookErr.message || 'ok');
+      }
+      
+      // Небольшая задержка перед запуском
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
       await bot.launch();
       console.log('✅ Bot is running!');
       console.log('Bot username:', bot.botInfo?.username || 'Unknown');
@@ -431,11 +443,23 @@ async function startBotWithRetry(retries = 3, delay = 5000) {
         process.exit(1);
       }
       
+      // Если это конфликт (409) - увеличиваем задержку и повторяем
+      if (err.response?.error_code === 409) {
+        console.error('⚠️ Another bot instance is running. Waiting longer before retry...');
+        const conflictDelay = delay * 2; // Удваиваем задержку для конфликта
+        if (i < retries - 1) {
+          console.log(`⏳ Waiting ${conflictDelay / 1000} seconds for other instance to stop...`);
+          await new Promise(resolve => setTimeout(resolve, conflictDelay));
+          continue;
+        }
+      }
+      
       if (i < retries - 1) {
         console.log(`⏳ Retrying in ${delay / 1000} seconds...`);
         await new Promise(resolve => setTimeout(resolve, delay));
       } else {
         console.error('❌ All retry attempts failed. Exiting...');
+        console.error('💡 Make sure no other bot instances are running (Railway, local, etc.)');
         process.exit(1);
       }
     }
