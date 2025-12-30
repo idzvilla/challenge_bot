@@ -60,3 +60,18 @@ export function calculateDaysUntilEndOfYear(startDate: string, timezone: string)
   return Math.max(1, diffDays);
 }
 
+/**
+ * Обертка для добавления таймаута к Promise
+ * Полезно для предотвращения зависаний на запросах к БД или внешним API
+ */
+export function withTimeout<T>(promise: Promise<T>, timeoutMs: number, operation: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      setTimeout(() => {
+        reject(new Error(`Timeout: ${operation} превысил ${timeoutMs}ms`));
+      }, timeoutMs);
+    })
+  ]);
+}
+

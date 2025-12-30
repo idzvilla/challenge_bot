@@ -7,7 +7,8 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts",
-    "watch": "tsc --watch"
+    "watch": "tsc --watch",
+    "export": "ts-node scripts/export-data.ts"
   },
   "keywords": ["telegram", "bot", "challenge", "pullups"],
   "author": "",
