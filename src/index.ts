@@ -16,6 +16,12 @@ if (!config.botToken) {
 const bot = new Telegraf(config.botToken);
 
 // Инициализация базы данных: PostgreSQL если есть DATABASE_URL, иначе SQLite
+if (!config.databaseUrl && !config.databasePath) {
+  console.error('❌ Neither DATABASE_URL nor DATABASE_PATH is set!');
+  console.error('Please set DATABASE_URL (for PostgreSQL) or DATABASE_PATH (for SQLite)');
+  process.exit(1);
+}
+
 const db: DatabaseAdapter = createDatabaseAdapter(config.databaseUrl, config.databasePath);
 const state: BotState = {
   waitingForReps: new Set<number>()
