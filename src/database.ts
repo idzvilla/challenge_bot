@@ -22,15 +22,23 @@ export class ChallengeDatabase {
   private db: Database.Database;
 
   constructor(dbPath: string) {
-    // Создаем директорию для базы данных, если её нет
-    const dir = path.dirname(dbPath);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
+    try {
+      // Создаем директорию для базы данных, если её нет
+      const dir = path.dirname(dbPath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+        console.log(`Created database directory: ${dir}`);
+      }
 
-    this.db = new Database(dbPath);
-    this.db.pragma('journal_mode = WAL');
-    this.initTables();
+      console.log(`Initializing database at: ${dbPath}`);
+      this.db = new Database(dbPath);
+      this.db.pragma('journal_mode = WAL');
+      this.initTables();
+      console.log('Database initialized successfully');
+    } catch (error) {
+      console.error('Failed to initialize database:', error);
+      throw error;
+    }
   }
 
   private initTables(): void {

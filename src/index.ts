@@ -405,10 +405,29 @@ process.once('SIGTERM', () => {
 
 // Запуск бота
 console.log('Starting bot...');
+console.log('Config:', {
+  timezone: config.timezone,
+  challengeStartDate: config.challengeStartDate,
+  databasePath: config.databasePath,
+  hasBotToken: !!config.botToken
+});
+
 bot.launch().then(() => {
-  console.log('Bot is running!');
+  console.log('✅ Bot is running!');
+  console.log('Bot username:', bot.botInfo?.username || 'Unknown');
 }).catch((err) => {
-  console.error('Failed to start bot:', err);
+  console.error('❌ Failed to start bot:', err);
+  console.error('Error details:', JSON.stringify(err, null, 2));
+  process.exit(1);
+});
+
+// Обработка необработанных ошибок
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
   process.exit(1);
 });
 
