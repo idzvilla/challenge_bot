@@ -412,14 +412,35 @@ console.log('Config:', {
   hasBotToken: !!config.botToken
 });
 
-bot.launch().then(() => {
-  console.log('✅ Bot is running!');
-  console.log('Bot username:', bot.botInfo?.username || 'Unknown');
-}).catch((err) => {
-  console.error('❌ Failed to start bot:', err);
-  console.error('Error details:', JSON.stringify(err, null, 2));
-  process.exit(1);
-});
+// Функция запуска бота с повторными попытками
+async function startBotWithRetry(retries = 3, delay = 5000) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      await bot.launch();
+      console.log('✅ Bot is running!');
+      console.log('Bot username:', bot.botInfo?.username || 'Unknown');
+      return;
+    } catch (err: any) {
+      console.error(`❌ Failed to start bot (attempt ${i + 1}/${retries}):`, err);
+      
+      // Если это ошибка авторизации - не повторяем
+      if (err.response?.error_code === 401 || err.message?.includes('Unauthorized')) {
+        console.error('❌ Invalid bot token! Check BOT_TOKEN variable.');
+        process.exit(1);
+      }
+      
+      if (i < retries - 1) {
+        console.log(`⏳ Retrying in ${delay / 1000} seconds...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      } else {
+        console.error('❌ All retry attempts failed. Exiting...');
+        process.exit(1);
+      }
+    }
+  }
+}
+
+startBotWithRetry();
 
 // Обработка необработанных ошибок
 process.on('unhandledRejection', (reason, promise) => {
