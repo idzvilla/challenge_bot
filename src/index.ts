@@ -173,26 +173,26 @@ bot.hears('👤 Мой прогресс', async (ctx: Context) => {
   try {
     // Используем логику из /me
     const user = await db.getOrCreateUser(
-    ctx.from.id,
-    ctx.from.username,
-    ctx.from.first_name
-  );
+      ctx.from.id,
+      ctx.from.username,
+      ctx.from.first_name
+    );
 
-  const todayDate = getDateInTimezone(config.timezone);
-  const stats = await db.getUserStats(user.id, todayDate, config.challengeStartDate);
+    const todayDate = getDateInTimezone(config.timezone);
+    const stats = await db.getUserStats(user.id, todayDate, config.challengeStartDate);
 
-  const remaining = Math.max(0, GOAL - stats.total);
-  const daysUntilEnd = calculateDaysUntilEndOfYear(config.challengeStartDate, config.timezone);
-  const neededPerDay = Math.ceil(remaining / daysUntilEnd);
+    const remaining = Math.max(0, GOAL - stats.total);
+    const daysUntilEnd = calculateDaysUntilEndOfYear(config.challengeStartDate, config.timezone);
+    const neededPerDay = Math.ceil(remaining / daysUntilEnd);
 
-  let tempoText = '';
-  if (stats.averagePerDay >= MIN_PER_DAY) {
-    tempoText = `✅ Вы опережаете план (${MIN_PER_DAY}/день)`;
-  } else {
-    tempoText = `⚠️ Вы отстаете от плана (${MIN_PER_DAY}/день)`;
-  }
+    let tempoText = '';
+    if (stats.averagePerDay >= MIN_PER_DAY) {
+      tempoText = `✅ Вы опережаете план (${MIN_PER_DAY}/день)`;
+    } else {
+      tempoText = `⚠️ Вы отстаете от плана (${MIN_PER_DAY}/день)`;
+    }
 
-  const message = `👤 Ваш прогресс:
+    const message = `👤 Ваш прогресс:
 
 📊 Всего: ${stats.total.toLocaleString()} подтягиваний
 📅 Сегодня: ${stats.today}
@@ -201,7 +201,12 @@ bot.hears('👤 Мой прогресс', async (ctx: Context) => {
 ${tempoText}
 📉 Нужно в день до конца года: ${neededPerDay}`;
 
-  await ctx.reply(message, getKeyboard());
+    await ctx.reply(message, getKeyboard());
+    console.log('✅ Sent progress message');
+  } catch (error) {
+    console.error('❌ Error in Мой прогресс:', error);
+    await ctx.reply('Произошла ошибка при получении данных. Попробуйте позже.').catch(console.error);
+  }
 });
 
 // /top
