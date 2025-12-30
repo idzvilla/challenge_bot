@@ -1,6 +1,7 @@
 import { Telegraf, Context, Markup } from 'telegraf';
 import { createDatabaseAdapter, DatabaseAdapter } from './database-adapter';
 import { getConfig, getDateInTimezone, getDateTimeInTimezone, formatUsername, calculateDaysUntilEndOfYear } from './utils';
+import * as http from 'http';
 
 interface BotState {
   waitingForReps: Set<number>;
@@ -402,11 +403,13 @@ bot.catch((err, ctx) => {
 // Graceful shutdown
 process.once('SIGINT', async () => {
   console.log('Shutting down...');
+  server.close();
   await db.close();
   bot.stop('SIGINT');
 });
 process.once('SIGTERM', async () => {
   console.log('Shutting down...');
+  server.close();
   await db.close();
   bot.stop('SIGTERM');
 });
