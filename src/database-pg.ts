@@ -26,7 +26,11 @@ export class ChallengeDatabase {
         connectionString: databaseUrl,
         ssl: databaseUrl.includes('supabase') || databaseUrl.includes('render.com') 
           ? { rejectUnauthorized: false } 
-          : false
+          : false,
+        max: 20,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 2000,
+        keepAlive: true, // Важно для предотвращения "зависаний" соединения
       });
 
       // Проверка подключения

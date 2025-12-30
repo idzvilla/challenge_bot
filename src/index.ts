@@ -45,6 +45,11 @@ const getKeyboard = () => {
   ]).resize();
 };
 
+// /ping (проверка жизни бота без БД)
+bot.command('ping', async (ctx: Context) => {
+  await ctx.reply('🏓 Pong! Бот работает.');
+});
+
 // /start
 bot.command('start', async (ctx: Context) => {
   if (!ctx.from) return;
@@ -166,10 +171,10 @@ ${tempoText}
 // Кнопка "👤 Мой прогресс"
 bot.hears('👤 Мой прогресс', async (ctx: Context) => {
   if (!ctx.from) return;
-  
+
   console.log('👤 Button clicked: Мой прогресс');
   clearWaitingState(ctx.from.id);
-  
+
   try {
     // Используем логику из /me
     const user = await db.getOrCreateUser(
@@ -423,7 +428,7 @@ bot.catch((err, ctx) => {
     message: ctx.message ? (ctx.message as any).text : 'no message',
     from: ctx.from ? ctx.from.id : 'no from'
   });
-  
+
   try {
     ctx.reply('Произошла ошибка. Попробуйте позже.').catch(console.error);
   } catch (e) {
@@ -501,23 +506,23 @@ async function startBotWithRetry(retries = 3, delay = 10000) {
         // Игнорируем ошибки при очистке webhook
         console.log('Webhook clear attempt:', webhookErr.message || 'ok');
       }
-      
+
       // Небольшая задержка перед запуском
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
+
       await bot.launch();
       console.log('✅ Bot is running!');
       console.log('Bot username:', bot.botInfo?.username || 'Unknown');
       return;
     } catch (err: any) {
       console.error(`❌ Failed to start bot (attempt ${i + 1}/${retries}):`, err);
-      
+
       // Если это ошибка авторизации - не повторяем
       if (err.response?.error_code === 401 || err.message?.includes('Unauthorized')) {
         console.error('❌ Invalid bot token! Check BOT_TOKEN variable.');
         process.exit(1);
       }
-      
+
       // Если это конфликт (409) - увеличиваем задержку и повторяем
       if (err.response?.error_code === 409) {
         console.error('⚠️ Another bot instance is running. Waiting longer before retry...');
@@ -528,7 +533,7 @@ async function startBotWithRetry(retries = 3, delay = 10000) {
           continue;
         }
       }
-      
+
       if (i < retries - 1) {
         console.log(`⏳ Retrying in ${delay / 1000} seconds...`);
         await new Promise(resolve => setTimeout(resolve, delay));

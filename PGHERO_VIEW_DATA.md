@@ -97,3 +97,4 @@ SELECT * FROM logs;
 
 Подробнее в файле `QUICK_DBEAVER_SETUP.md`
 
+

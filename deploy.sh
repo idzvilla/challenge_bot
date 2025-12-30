@@ -40,3 +40,4 @@ echo "📊 Проверить логи: railway logs"
 echo "📈 Проверить статус: railway status"
 
 
+

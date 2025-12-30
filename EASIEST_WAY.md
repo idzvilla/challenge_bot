@@ -46,3 +46,4 @@ psql "postgresql://challenge_user:password@dpg-xxxxx-a.frankfurt-postgres.render
 
 **Для большинства задач команды бота достаточно!**
 
+

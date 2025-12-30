@@ -104,3 +104,4 @@ render db:connect challenge-bot-db
 
 Но для DBeaver нужен External Database URL с правильным паролем.
 
+

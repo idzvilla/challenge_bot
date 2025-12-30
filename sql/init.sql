@@ -26,3 +26,4 @@ CREATE INDEX IF NOT EXISTS idx_logs_log_date ON logs(log_date);
 CREATE INDEX IF NOT EXISTS idx_logs_user_date ON logs(user_id, log_date);
 
 
+
